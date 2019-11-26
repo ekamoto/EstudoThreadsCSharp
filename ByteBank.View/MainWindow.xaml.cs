@@ -47,14 +47,14 @@ namespace ByteBank.View
 
             var inicio = DateTime.Now;
 
-            // var progress = new Progress<String>(str => PgsProgresso.Value++);
+            var progress = new Progress<String>(str => PgsProgresso.Value++);
 
             // Essa classe que foi criada implementa praticamente a mesma coisa que o método Progress acima
             // porém dessa forma eu consigo customizar se eu quiser
-            var byteBankProgress = new ByteBankProgress<String>(str =>
-            PgsProgresso.Value++);
+            // var byteBankProgress = new ByteBankProgress<String>(str =>
+            // PgsProgresso.Value++);
 
-            var resultado = await ConsolidarContas(contas, byteBankProgress);
+            var resultado = await ConsolidarContas(contas, progress);
             
             var fim = DateTime.Now;
             AtualizarView(resultado, fim - inicio);
