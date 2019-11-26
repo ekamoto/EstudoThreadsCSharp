@@ -49,7 +49,8 @@ namespace ByteBank.View
             // Cria uma lista de tarefas para ser executada pelo nosso gerenciador de Threads
             var contasTarefas = contas.Select(conta =>
             {
-                // Task Factory é nosso gerenciador de threads, ele controla e otimiza a utilização
+                // Quando é utilizado Task Factory ele usa o gerenciador de threads
+                // TaskScheduler default, ele controla e otimiza a utilização
                 // dos núcleos de processamento
                 return Task.Factory.StartNew(() =>
                 {
@@ -61,6 +62,8 @@ namespace ByteBank.View
 
             // Quando todas as Tarefas forem finalizadas
             // esse método permite encadear Threads passando o resultado da execução de uma para outra
+            // 
+            // Task.WaitAll - esse método trava até todas as tasks terminarem
             Task.WhenAll(contasTarefas)
                 // O método ContinueWith permite encadear Tasks, ele possui várias interfaces,
                 // uma delas permite passar o contexto da TaskSchedule, nesse caso é necessário
