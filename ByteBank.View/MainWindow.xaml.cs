@@ -32,59 +32,38 @@ namespace ByteBank.View
             r_Servico = new ContaClienteService();
         }
 
-        private void BtnProcessar_Click(object sender, RoutedEventArgs e)
+        private async void BtnProcessar_Click(object sender, RoutedEventArgs e)
         {
             // Pegando o contexto da Thread principal
             var taskSchedulerUI = TaskScheduler.FromCurrentSynchronizationContext();
             BtnProcessar.IsEnabled = false;
 
             var contas = r_Repositorio.GetContaClientes();
-            
-            var resultado = new List<string>();
-
+           
             AtualizarView(new List<string>(), TimeSpan.Zero);
 
             var inicio = DateTime.Now;
-            
-            // Cria uma lista de tarefas para ser executada pelo nosso gerenciador de Threads
-            var contasTarefas = contas.Select(conta =>
-            {
-                // Quando é utilizado Task Factory ele usa o gerenciador de threads
-                // TaskScheduler default, ele controla e otimiza a utilização
-                // dos núcleos de processamento
-                return Task.Factory.StartNew(() =>
-                {
 
-                    var resultadoConta = r_Servico.ConsolidarMovimentacao(conta);
-                    resultado.Add(resultadoConta);
-                });
-            }).ToArray();
+            var resultado = await ConsolidarContas(contas);
 
-            // Quando todas as Tarefas forem finalizadas
-            // esse método permite encadear Threads passando o resultado da execução de uma para outra
-            // 
-            // Task.WaitAll - esse método trava até todas as tasks terminarem
-            Task.WhenAll(contasTarefas)
-                // O método ContinueWith permite encadear Tasks, ele possui várias interfaces,
-                // uma delas permite passar o contexto da TaskSchedule, nesse caso é necessário
-                // pq ele está tentando acessar elemento do GUI que fica na thread principal, por
-                // isso é necessário capturar ela e passar para o método saber que é para executar nesse contexto
-                .ContinueWith(task => {
-                    var fim = DateTime.Now;
-
-                    // Atualiza elementos da GUI - Interface gráfica de usuário
-                    AtualizarView(resultado, fim - inicio);
-                }, taskSchedulerUI)
-                .ContinueWith(task =>
-                {
-                    BtnProcessar.IsEnabled = true;
-                }, taskSchedulerUI);
+            var fim = DateTime.Now;
+            AtualizarView(resultado, fim - inicio);
+            BtnProcessar.IsEnabled = true;
         }
 
-        private void AtualizarView(List<String> result, TimeSpan elapsedTime)
+        private async Task<string[]> ConsolidarContas(IEnumerable<ContaCliente> contas)
+        {
+            var tasks = contas.Select(conta =>
+                Task.Factory.StartNew(() => r_Servico.ConsolidarMovimentacao(conta))
+            );
+
+            return await Task.WhenAll(tasks);
+        }
+
+        private void AtualizarView(IEnumerable<String> result, TimeSpan elapsedTime)
         {
             var tempoDecorrido = $"{ elapsedTime.Seconds }.{ elapsedTime.Milliseconds} segundos!";
-            var mensagem = $"Processamento de {result.Count} clientes em {tempoDecorrido}";
+            var mensagem = $"Processamento de {result.Count()} clientes em {tempoDecorrido}";
 
             LstResultados.ItemsSource = result;
             TxtTempo.Text = mensagem;
